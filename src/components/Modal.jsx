@@ -1,127 +1,116 @@
 import { useState, useEffect } from 'react';
 
-export default function ModalForm({ isOpen, onClose, mode, onSubmit, selectedVente }) {
-  // États pour les champs du formulaire
+export default function Modal({ isOpen, onClose, mode, onSubmit, selectedVente }) {
   const [formData, setFormData] = useState({
-    numproduit: '',
     design: '',
-    prix: '',
-    quantité: ''
+    prix: '0', 
+    quantite: '1'
   });
+  console.log("Modal reçoit:", { selectedVente, mode, isOpen });
 
-  // Met à jour les champs quand selectedVente change
   useEffect(() => {
-    if (mode === 'edit' && selectedVente) {
-      setFormData({
-        numproduit: selectedVente.id || '',
-        design: selectedVente.design || '',
-        prix: selectedVente.prix || '',
-        quantité: selectedVente.quantité || ''
-      });
-    } else {
-      // Réinitialise pour l'ajout
-      setFormData({
-        numproduit: '',
-        design: '',
-        prix: '',
-        quantité: ''
-      });
+    if (isOpen) {
+      if (mode === 'edit' && selectedVente) {
+        setFormData({
+          design: selectedVente.design || '',
+          prix: selectedVente.prix?.toString() || '0',
+          quantite: selectedVente.quantite?.toString() || '1'
+        });
+      } else {
+        setFormData({
+          design: '',
+          prix: '0',
+          quantite: '1'
+        });
+      }
     }
-  }, [selectedVente, mode]);
+  }, [isOpen, mode, selectedVente]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(formData); // Envoie les données du formulaire
+    try {
+      await onSubmit({
+        design: formData.design,
+        prix: parseFloat(formData.prix),
+        quantite: parseInt(formData.quantite)
+      });
+      onClose(); // Fermer seulement après succès
+    } catch (error) {
+      console.error("Erreur soumission:", error);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
     <div className={`modal ${isOpen ? 'modal-open' : ''}`}>
-      <div className="modal-box">
-        <div className="flex flex-col gap-1 ml-12">
-          <h3 className="font-bold text-lg py-4">
-            {mode === "edit" ? "Modifier vente" : "Ajouter vente"}
-          </h3>
-          
-          <form onSubmit={handleSubmit}>
-            <button
-              type="button"
-              className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-              onClick={onClose}
-            >
-              ✕
-            </button>
+      <div className="modal-box relative">
+        <button 
+          onClick={onClose}
+          className="btn btn-sm btn-circle absolute right-2 top-2"
+        >
+          ✕
+        </button>
+        
+        <h3 className="text-lg font-bold mb-4">
+          {mode === "edit" ? "Modifier vente" : "Nouvelle vente"}
+        </h3>
 
-            <div className="mb-5">
-              <label className="floating-label">
-                <span>Numéro du produit</span>
-                <input
-                  type="text"
-                  name="numproduit"
-                  placeholder="Numéro du produit"
-                  className="input input-md"
-                  value={formData.numproduit}
-                  onChange={handleChange}
-                />
-              </label>
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text">Designation*</span>
+            </label>
+            <input
+              type="text"
+              name="design"
+              value={formData.design}
+              onChange={handleChange}
+              className="input input-bordered w-full"
+              required
+            />
+          </div>
 
-            <div className="mb-5">
-              <label className="floating-label">
-                <span>Design</span>
-                <input
-                  type="text"
-                  name="design"
-                  placeholder="Design"
-                  className="input input-md"
-                  value={formData.design}
-                  onChange={handleChange}
-                />
-              </label>
-            </div>
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text">Prix unitaire*</span>
+            </label>
+            <input
+              type="number"
+              name="prix"
+              value={formData.prix}
+              onChange={handleChange}
+              className="input input-bordered w-full"
+              min="0"
+              step="0.01"
+              required
+            />
+          </div>
 
-            <div className="mb-5">
-              <label className="floating-label">
-                <span>Prix unitaire</span>
-                <input
-                  type="text"
-                  name="prix"
-                  placeholder="Prix unitaire"
-                  className="input input-md"
-                  value={formData.prix}
-                  onChange={handleChange}
-                />
-              </label>
-            </div>
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text">Quantité*</span>
+            </label>
+            <input
+              type="number"
+              name="quantite"
+              value={formData.quantite}
+              onChange={handleChange}
+              className="input input-bordered w-full"
+              min="1"
+              required
+            />
+          </div>
 
-            <div className="mb-5">
-              <label className="floating-label">
-                <span>Quantité</span>
-                <input
-                  type="text"
-                  name="quantité"
-                  placeholder="Quantité"
-                  className="input input-md"
-                  value={formData.quantité}
-                  onChange={handleChange}
-                />
-              </label>
-            </div>
-
-            <button type="submit" className="btn btn-success">
-              {mode === "edit" ? "Sauvegarder" : "Ajouter"}
-            </button>
-          </form>
-        </div>
+          <button type="submit" className="btn btn-primary w-full mt-6">
+            {mode === "edit" ? "Enregistrer" : "Créer"}
+          </button>
+        </form>
       </div>
     </div>
   );
